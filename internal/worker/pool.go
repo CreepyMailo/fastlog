@@ -9,16 +9,14 @@ import (
 	"github.com/CreepyMailo/fastlog/internal/stats"
 )
 
-// Config конфигурация пула воркеров
 type Config struct {
-	FilePath     string
-	StatusFilter int
-	NumWorkers   int
-	BufferSize   int
-	Aggregator   *stats.Aggregator
+	FilePath      string
+	StatusMatcher func(int) bool
+	NumWorkers    int
+	BufferSize    int
+	Aggregator    *stats.Aggregator
 }
 
-// Pool управляет пулом воркеров
 type Pool struct {
 	config *Config
 	parser *parser.Parser
@@ -26,7 +24,6 @@ type Pool struct {
 	wg     sync.WaitGroup
 }
 
-// NewPool создает новый пул воркеров
 func NewPool(config *Config) *Pool {
 	return &Pool{
 		config: config,
@@ -35,7 +32,6 @@ func NewPool(config *Config) *Pool {
 	}
 }
 
-// Run запускает обработку файла
 func (p *Pool) Run() error {
 	file, err := os.Open(p.config.FilePath)
 	if err != nil {
@@ -72,7 +68,8 @@ func (p *Pool) worker() {
 
 		p.config.Aggregator.AddLine()
 
-		if p.config.StatusFilter == 0 || entry.Status == p.config.StatusFilter {
+		if p.config.StatusMatcher(entry.Status) {
+			p.config.Aggregator.AddMatchedLine()
 			p.config.Aggregator.AddIP(entry.IP)
 			p.config.Aggregator.AddURL(entry.URL)
 		}

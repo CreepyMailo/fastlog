@@ -5,22 +5,20 @@ import (
 	"sync"
 )
 
-// Item представляет элемент с ключом и значением для сортировки
 type Item struct {
 	Key   string
 	Count int
 }
 
-// Aggregator собирает статистику из обработанных логов
 type Aggregator struct {
-	mu         sync.RWMutex
-	ipCounts   map[string]int
-	urlCounts  map[string]int
-	totalLines int
-	errorLines int
+	mu           sync.RWMutex
+	ipCounts     map[string]int
+	urlCounts    map[string]int
+	totalLines   int
+	matchedLines int
+	errorLines   int
 }
 
-// NewAggregator создает новый агрегатор
 func NewAggregator() *Aggregator {
 	return &Aggregator{
 		ipCounts:  make(map[string]int),
@@ -49,6 +47,13 @@ func (a *Aggregator) AddLine() {
 	a.totalLines++
 }
 
+// AddMatchedLine увеличивает счетчик строк, прошедших фильтр
+func (a *Aggregator) AddMatchedLine() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.matchedLines++
+}
+
 // AddErrorLine увеличивает счетчик ошибочных строк
 func (a *Aggregator) AddErrorLine() {
 	a.mu.Lock()
@@ -61,6 +66,13 @@ func (a *Aggregator) GetTotalLines() int {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 	return a.totalLines
+}
+
+// GetMatchedLines возвращает количество строк, прошедших фильтр
+func (a *Aggregator) GetMatchedLines() int {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	return a.matchedLines
 }
 
 // GetErrorLines возвращает количество строк с ошибками
